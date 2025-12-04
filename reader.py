@@ -1,30 +1,4 @@
-import ebooklib
-from ebooklib import epub
 
-def read_epub_content(file_path):
-    """
-    Reads an EPUB file and extracts its text content.
-    """
-    try:
-        # Read the EPUB file
-        book = epub.read_epub(file_path)
-
-        # Iterate through the items in the book to find document content
-        for item in book.get_items():
-            if item.get_type() == ebooklib.ITEM_DOCUMENT:
-                # Get the content of the document item (e.g., a chapter)
-                content = item.get_content()
-                # You can then process this content (e.g., print it, parse it with BeautifulSoup)
-                print(f"Content from item '{item.get_id()}':")
-                print(content.decode('utf-8')) # Decode bytes to string
-                print("-" * 30)
-
-    except Exception as e:
-        print(f"Error reading EPUB file: {e}")
-
-# Example usage:
-#epub_file = 'theKingInYellow.epub' # Replace with your EPUB file path
-#read_epub_content(epub_file)
 
 
 import ebooklib
@@ -71,12 +45,16 @@ def get_specific_item_by_index(file_path, item_index):
 # Example usage: Get the content of the first main chapter (index might vary, often starts at 0 or 1 for content)
 epub_file = 'theKingInYellow.epub'
 # You might need to experiment with the index. Some books start useful content at index 0, others later.
-page_text = get_specific_item_by_index(epub_file, 1) 
+page_text = get_specific_item_by_index(epub_file, 2) 
 
-if page_text:
-    print(page_text[:1000] + "...") 
-else:
-    # If index 1 didn't work, try index 2
-    page_text = get_specific_item_by_index(epub_file, 2)
-    if page_text:
-        print(page_text[:1000] + "...")
+
+def parseText(file_path, index, trim):
+        # Call the function from your reader module
+        book_content = get_specific_item_by_index(file_path, index)
+
+        if book_content is None:
+            book_content_trim = "Error: Could not load book content. Check your EPUB file or index number."
+        else:
+            book_content_trim = book_content[:trim] + "..."
+
+        return book_content_trim
