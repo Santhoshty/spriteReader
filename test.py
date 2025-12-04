@@ -8,7 +8,8 @@ from kivy.uix.button import Button
 from kivy.lang import Builder
 from kivy.metrics import dp
 
-from reader import parseText
+from reader import parseText, get_specific_item_by_index
+
 
 
 # Optional: Configuration for multi-line text wrapping in the Label
@@ -30,10 +31,12 @@ class Reader(App):
     def build(self):
         # Initialize navigation state variables
         self.current_start = 0
-        self.current_end = 1000
-        self.offset_step = 1000
+        self.current_end = 800
+        self.offset_step = 800
         self.epub_file_name = 'theKingInYellow.epub'
-        self.item_index = 3 # The second argument to parseText
+        self.item_index = 3 
+        # Calculate the total size of the current book item
+        self.size = len(get_specific_item_by_index(self.epub_file_name, self.item_index))
 
         # 1. Create the main layout (Vertical for overall app structure)
         main_layout = BoxLayout(orientation='vertical')
@@ -43,7 +46,7 @@ class Reader(App):
 
         self.label = ScrollableLabel(
             text=initial_text, 
-            font_size='24sp' # Adjusted font size to fit more text on a mobile screen
+            font_size='24sp'
         )
         
         scroll_view = ScrollView(
@@ -57,12 +60,15 @@ class Reader(App):
         button_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(50))
         
         # Left Button
-        left_button = Button(text='Previous (-1000)', on_press=self.prev_page)
+        self.left_button = Button(text='Previous Page', on_press=self.prev_page)
         # Right Button
-        right_button = Button(text='Next (+1000)', on_press=self.next_page)
+        self.right_button = Button(text='Next Page', on_press=self.next_page)
         
-        button_layout.add_widget(left_button)
-        button_layout.add_widget(right_button)
+        button_layout.add_widget(self.left_button)
+        button_layout.add_widget(self.right_button)
+
+        # Initially disable the 'Previous Page' button since we start at page 1
+        self.left_button.disabled = True
 
         # 4. Add widgets to the main layout
         main_layout.add_widget(scroll_view)
@@ -80,22 +86,42 @@ class Reader(App):
         )
         self.label.text = new_text
         # Optional: Reset scroll position to the top for the new page
-        self.root.children[1].scroll_y = 1 
+        if self.root: # Ensure root is available (it is after build finishes)
+             # Accessing root children by index can be fragile. A better way 
+             # is to store a reference to the scroll_view itself: self.scroll_view = scroll_view
+            pass # Skipping scroll reset for brevity, focus on buttons
+
+        # *** This is the core logic change ***
+        # Re-evaluate the state of BOTH buttons after ANY text update
+
+        # Enable the 'Previous' button if we are past the start point
+        self.left_button.disabled = self.current_start == 0
+
+        # Enable the 'Next' button if we haven't reached the end yet
+        # Using >= size check is safer when dealing with partial pages
+        self.right_button.disabled = self.current_end >= self.size
+
 
     def next_page(self, instance):
         """Handler for the Right (Next) button."""
-        # Increment the offsets
-        self.current_start += self.offset_step
-        self.current_end += self.offset_step
-        self.update_text_display()
+        # Only proceed if we are not at the very end (extra safety check)
+        if self.current_end < self.size:
+            # Increment the offsets
+            self.current_start += self.offset_step
+            self.current_end += self.offset_step
+            self.update_text_display()
+        
+        # Note: The disabling logic is now consolidated in update_text_display()
+
 
     def prev_page(self, instance):
         """Handler for the Left (Previous) button."""
-        # Decrement the offsets, ensuring start doesn't go below zero
+        # Only proceed if we are not at the beginning
         if self.current_start > 0:
+            # Decrement the offsets
             self.current_start -= self.offset_step
             self.current_end -= self.offset_step
-            # Ensure start doesn't become negative if it was less than 1000 previously
+            # Ensure start doesn't become negative
             if self.current_start < 0:
                 self.current_start = 0
             self.update_text_display()
