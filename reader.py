@@ -42,19 +42,14 @@ def get_specific_item_by_index(file_path, item_index):
         print(f"An error occurred: {e}")
         return None
 
-# Example usage: Get the content of the first main chapter (index might vary, often starts at 0 or 1 for content)
-epub_file = 'theKingInYellow.epub'
-# You might need to experiment with the index. Some books start useful content at index 0, others later.
-page_text = get_specific_item_by_index(epub_file, 2) 
 
-
-def parseText(file_path, index, trim):
+def parseText(file_path, index, trim_start, trim_end):
         # Call the function from your reader module
         book_content = get_specific_item_by_index(file_path, index)
 
         if book_content is None:
             book_content_trim = "Error: Could not load book content. Check your EPUB file or index number."
         else:
-            book_content_trim = book_content[:trim] + "..."
+            book_content_trim = book_content[trim_start:trim_end] + "..."
 
         return book_content_trim
